@@ -260,6 +260,22 @@ curl -o tvperu.xml http://SERVER:9012/feeds/tvperu.xml # XML served by the API
 through the API persist in the volume. `docker compose down` keeps it, `down -v` deletes it.
 To edit it by hand: `docker compose exec yt-feeds vi /data/channels.json`.
 
+Every automatic pass is logged to stdout (Render captures it, Docker keeps it):
+
+```text
+[2026-11-17 03:59:42] auto refresh: scheduled every 600s
+[2026-11-17 04:09:42] auto refresh: start (2 channels, kinds=shorts,videos)
+[2026-11-17 04:09:42] fetch tvperu [videos]
+[2026-11-17 04:09:44] ok    tvperu [videos]: 20 items, 1 new
+[2026-11-17 04:09:45] fetch tvperu [shorts]
+[2026-11-17 04:09:47] ok    tvperu [shorts]: 20 items, 0 new
+[2026-11-17 04:09:54] auto refresh: done 4/4 ok in 10.3s; next in 600s
+```
+
+```bash
+docker compose logs -f yt-feeds   # follow it locally
+```
+
 Set the public prefix so RSS self-links and `feed_url` point at the VPS (default is
 `http://localhost:9012/feeds`):
 

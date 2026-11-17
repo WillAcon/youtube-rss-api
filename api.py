@@ -434,9 +434,12 @@ def run_check(keys=None, kinds=None):
         for kind in kinds or gen.channel_kinds(channel):
             if report:
                 time.sleep(1.5)
+            label = f"{channel['slug']} [{kind}]"
+            gen.log(f"fetch {label}")
             try:
                 items, new_ids = gen.refresh_channel(channel, state, moment, kind)
                 gen.save_json(gen.STATE_PATH, state)
+                gen.log(f"ok    {label}: {len(items)} items, {len(new_ids)} new")
                 report.append(
                     {
                         "channel": channel["slug"],
@@ -447,6 +450,7 @@ def run_check(keys=None, kinds=None):
                     }
                 )
             except Exception as exc:  # noqa: BLE001
+                gen.log(f"FAIL  {label}: {exc}")
                 report.append(
                     {"channel": channel["slug"], "kind": kind, "ok": False, "error": str(exc)}
                 )
@@ -910,13 +914,26 @@ def refresh_loop(interval):
     while True:
         time.sleep(interval)
         if not LOCK.acquire(blocking=False):
-            continue  # an on-demand check is already running
+            gen.log("auto refresh: skipped, another check is already running")
+            continue
+        started = time.time()
         try:
+            channels = load_channels()
+            kinds = sorted(
+                {kind for channel in channels for kind in gen.channel_kinds(channel)}
+            )
+            gen.log(
+                f"auto refresh: start ({len(channels)} channels, "
+                f"kinds={','.join(kinds) or '-'})"
+            )
             result = run_check()
             ok = sum(1 for item in result["report"] if item["ok"])
-            gen.log(f"auto refresh: {ok}/{len(result['report'])} fetches ok")
+            gen.log(
+                f"auto refresh: done {ok}/{len(result['report'])} ok "
+                f"in {time.time() - started:.1f}s; next in {interval}s"
+            )
         except Exception as exc:  # noqa: BLE001 - keep the thread alive
-            gen.log(f"auto refresh failed: {exc}")
+            gen.log(f"auto refresh: failed after {time.time() - started:.1f}s: {exc}")
         finally:
             LOCK.release()
 
@@ -926,7 +943,7 @@ def main():
         threading.Thread(
             target=refresh_loop, args=(REFRESH_INTERVAL,), daemon=True
         ).start()
-        gen.log(f"auto refresh every {REFRESH_INTERVAL}s")
+        gen.log(f"auto refresh: scheduled every {REFRESH_INTERVAL}s")
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     gen.log(f"yt-feeds api listening on {HOST}:{PORT} (cors={CORS_ORIGINS or 'off'})")
     try:
