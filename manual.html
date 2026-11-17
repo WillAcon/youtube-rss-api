@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>youtube-rss-api · Manual</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1d212a;
+    --text: #e7e9ee;
+    --muted: #9aa3b2;
+    --line: #2a2f3a;
+    --accent: #ff5a36;
+    --accent-2: #59d3a6;
+    --code: #10131a;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.hero {
+    border: 1px solid var(--line);
+    background: linear-gradient(160deg, #1b1f28, #12151b 60%);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 28px;
+  }
+  header.hero h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.02em; }
+  header.hero p { margin: 0; color: var(--muted); max-width: 760px; }
+  .pills { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    font-size: 12px; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); background: var(--panel);
+  }
+  nav.toc {
+    display: flex; flex-wrap: wrap; gap: 8px 16px;
+    padding: 12px 16px; margin-bottom: 28px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    font-size: 14px;
+  }
+  nav.toc a { color: var(--accent-2); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  h2 {
+    margin: 40px 0 12px; font-size: 22px; letter-spacing: -0.01em;
+    padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  }
+  h3 { margin: 24px 0 8px; font-size: 16px; color: var(--text); }
+  p, li { color: #cdd3de; }
+  a { color: var(--accent-2); }
+  code, pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13.5px;
+  }
+  code {
+    background: var(--panel-2); border: 1px solid var(--line);
+    padding: 1px 6px; border-radius: 6px; color: #ffd7c9;
+  }
+  pre {
+    background: var(--code); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; overflow-x: auto; line-height: 1.55;
+  }
+  pre code { background: none; border: 0; padding: 0; color: #dbe3f0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  tr:last-child td { border-bottom: 0; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--panel); border-radius: 0 10px 10px 0;
+    padding: 12px 16px; margin: 16px 0; color: #d6dbe4;
+  }
+  .note strong { color: #fff; }
+  .ok { color: var(--accent-2); }
+  .muted { color: var(--muted); }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+  kbd {
+    background: var(--panel-2); border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 5px; padding: 1px 6px; font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>youtube-rss-api · Manual rápido</h1>
+  <p>Feeds RSS y API JSON para canales de YouTube, construidos desde la página del canal
+     (sin API key ni navegador headless). Soporta <strong>videos</strong>,
+     <strong>shorts</strong> y <strong>streams</strong> por separado.</p>
+  <div class="pills">
+    <span class="pill">Python 3.8+ · stdlib</span>
+    <span class="pill">GET · POST · PATCH · DELETE</span>
+    <span class="pill">Token compartido</span>
+    <span class="pill">RSS 2.0</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#inicio">Arranque</a>
+  <a href="#urls">Prefijos de URL</a>
+  <a href="#tipos">Tipos de contenido</a>
+  <a href="#endpoints">Endpoints</a>
+  <a href="#parametros">Parámetros</a>
+  <a href="#ejemplos">Ejemplos</a>
+  <a href="#respuesta">Respuesta</a>
+  <a href="#errores">Errores</a>
+  <a href="#entorno">Variables de entorno</a>
+  <a href="#notas">Notas y límites</a>
+</nav>
+
+<h2 id="inicio">1. Arranque rápido</h2>
+
+<h3>Opción A (recomendada): un archivo <code>.env</code></h3>
+
+<pre><code># 1) generar feeds + caché (channels.json es la lista de canales)
+python3 generate.py
+
+# 2) crear .env una sola vez y poner un token fijo
+cp .env.example .env
+TOKEN=$(openssl rand -hex 16)
+perl -pi -e "s/^YT_API_TOKEN=.*/YT_API_TOKEN=$TOKEN/" .env
+# edita .env si hace falta: YT_API_PORT=8000, YT_PUBLIC_READ=1, YT_FEEDS_PUBLIC_BASE=...
+chmod 600 .env
+
+# 3) arrancar la API (lee .env solo): JSON en el puerto 8000
+python3 api.py
+
+# 4) en otra terminal, servir los XML (los feeds NO los sirve la API)
+python3 -m http.server 8001 --directory feeds</code></pre>
+
+<div class="note">
+  <strong>Dos puertos:</strong> la API responde JSON en <code>8000</code>; los archivos
+  <code>.xml</code> se sirven aparte (aquí <code>8001</code>, en producción nginx).
+  <code>YT_FEEDS_PUBLIC_BASE</code> debe apuntar <em>dónde se sirven los feeds</em>
+  (<code>http://localhost:8001</code> localmente), porque ese prefijo se escribe en los
+  self-links del RSS y en <code>feed_url</code>.
+  <br>
+  <strong>¿Un solo puerto?</strong> Usa Docker Compose (sección 11): el contenedor sirve JSON
+  y XML juntos en el puerto <code>9012</code>.
+</div>
+
+<p>Los dos scripts (<code>api.py</code> y <code>generate.py</code>) leen <code>.env</code> de la
+carpeta del proyecto al arrancar. El archivo está en <code>.gitignore</code>, así que no se sube al
+repositorio. Si una variable ya existe en el entorno, esa tiene prioridad. Para usar otro archivo:</p>
+
+<pre><code>YT_ENV_FILE=/ruta/mi.env python3 api.py</code></pre>
+
+<h3>Opción B: variables inline (válidas solo para ese comando)</h3>
+
+<pre><code>YT_API_TOKEN="$(openssl rand -hex 16)" \
+YT_API_PORT=8000 \
+YT_PUBLIC_READ=1 \
+YT_FEEDS_PUBLIC_BASE="http://localhost:8000" \
+python3 api.py</code></pre>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Línea</th><th>Qué hace</th></tr></thead>
+  <tbody>
+    <tr><td><code>\</code> al final</td><td>Continúa la orden en la línea siguiente. Las asignaciones se aplican <strong>solo</strong> al proceso <code>python3 api.py</code>; no quedan en tu shell.</td></tr>
+    <tr><td><code>YT_API_TOKEN="$(openssl rand -hex 16)"</code></td><td>Genera 32 caracteres hexadecimales con <code>openssl</code> y los usa como secreto compartido. Es obligatorio; sin él la API no arranca.</td></tr>
+    <tr><td><code>YT_API_PORT=8000</code></td><td>Puerto donde escucha. Por defecto <code>8099</code>.</td></tr>
+    <tr><td><code>YT_PUBLIC_READ=1</code></td><td>Abre <code>GET /api/channel/...</code> sin token. El resto de rutas sigue pidiendo token.</td></tr>
+    <tr><td><code>YT_FEEDS_PUBLIC_BASE="http://localhost:8000"</code></td><td>Prefijo que se escribe en los self-links del RSS y en el campo <code>feed_url</code> de las respuestas JSON.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <strong>Ojo con el token:</strong> <code>$(openssl rand -hex 16)</code> se ejecuta
+  <em>cada vez</em> que lanzas esa línea. Si reinicias la API con el mismo comando, el token cambia
+  y cualquier cliente que use el anterior empieza a recibir <code>401</code>. Fíjalo una vez en
+  <code>.env</code> (Opción A) o en el <code>EnvironmentFile</code> de systemd en producción.
+</div>
+
+<p>Comprobación (cargando <code>.env</code> en la shell para poder usar <code>$YT_API_TOKEN</code>):</p>
+
+<pre><code>set -a; . ./.env; set +a
+curl -s "http://localhost:8000/api/health?token=$YT_API_TOKEN"
+
+# o sin exportar nada:
+TOKEN=$(grep '^YT_API_TOKEN=' .env | cut -d= -f2-)
+curl -s -H "X-API-Token: $TOKEN" "http://localhost:8000/api/health"</code></pre>
+
+<div class="note">
+  <strong>Lectura pública:</strong> con <code>YT_PUBLIC_READ=1</code> solo se abre
+  <code>GET /api/channel/...</code>. Todo lo demás (<code>/api/channels</code>,
+  <code>/api/updates</code>, <code>/api/check</code>, escrituras) sigue exigiendo token.
+  <br>
+  <strong>Producción:</strong> systemd no usa <code>.env</code>; usa
+  <code>EnvironmentFile=/etc/default/yt-feeds-api</code> (ver <code>deploy/</code>).
+</div>
+
+<h2 id="urls">2. Prefijos de URL</h2>
+
+<p>El mismo router se sirve bajo tres prefijos. Usa el que encaje con tu despliegue:</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Prefijo</th><th>Cuándo usarlo</th><th>Ejemplo</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>/api</code></td>
+      <td>Local o proxy propio. Es el prefijo recomendado para clientes.</td>
+      <td><code>http://localhost:8000/api/channel/@tvperu/shorts</code></td>
+    </tr>
+    <tr>
+      <td><code>/yt/api</code></td>
+      <td>Producción con el nginx de <code>deploy/</code> (no se tocó).</td>
+      <td><code>https://feeds.ejemplo.com/yt/api/channels/tvperu/shorts</code></td>
+    </tr>
+    <tr>
+      <td><code>/channel</code></td>
+      <td>Alias antiguo, se mantiene por enlaces ya compartidos. No usar en código nuevo.</td>
+      <td><code>http://localhost:8000/channel/@tvperu/shorts</code></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p><code>&lt;key&gt;</code> acepta <code>slug</code>, <code>@handle</code>, id de canal
+(<code>UC...</code>), URL de YouTube o nombre (exacto o subcadena única). Si el canal no está
+registrado en <code>channels.json</code>, se resuelve al vuelo contra YouTube y se consulta en
+vivo, sin escribirlo en la lista.</p>
+
+<h2 id="tipos">3. Tipos de contenido</h2>
+
+<p>Cada pestaña del canal se pide por separado:</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>kind</th><th>Qué devuelve</th><th>Link del item</th></tr></thead>
+  <tbody>
+    <tr><td><code>videos</code> <span class="muted">(por defecto)</span></td><td>Subidas normales</td><td><code>youtube.com/watch?v=ID</code></td></tr>
+    <tr><td><code>shorts</code></td><td>Shorts verticales</td><td><code>youtube.com/shorts/ID</code></td></tr>
+    <tr><td><code>streams</code></td><td>Directos y sus repeticiones</td><td><code>youtube.com/watch?v=ID</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code># las tres formas equivalentes de pedir shorts
+GET /api/channel/@tvperu/shorts?limit=20
+GET /api/channels/tvperu/shorts?limit=20
+GET /api/channels/tvperu/videos?kind=shorts&amp;limit=20</code></pre>
+
+<div class="note">
+  <strong>Qué tipos descarga el cron:</strong> se configura por canal con
+  <code>"kinds": ["videos", "shorts"]</code> en <code>channels.json</code>. Si el canal no lo
+  declara, se usa la variable <code>YT_KINDS</code> (por defecto solo <code>videos</code>).
+  La API puede pedir cualquier tipo en vivo aunque el cron no lo genere.
+</div>
+
+<h2 id="endpoints">4. Endpoints</h2>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Uso</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td><code>/api/health</code></td><td>Estado y número de canales</td></tr>
+    <tr><td>GET</td><td><code>/api/channels</code></td><td>Lista canales; <code>?videos=1</code> incluye todos los videos cacheados</td></tr>
+    <tr><td>GET</td><td><code>/api/channels/&lt;key&gt;</code></td><td>Un canal con sus videos y conteo por tipo</td></tr>
+    <tr><td>GET</td><td><code>/api/channel/&lt;key&gt;/&lt;kind&gt;</code></td><td><strong>Contenido por tipo</strong> (videos, shorts, streams)</td></tr>
+    <tr><td>GET</td><td><code>/api/channels/&lt;key&gt;/&lt;kind&gt;</code></td><td>Igual que la anterior</td></tr>
+    <tr><td>GET</td><td><code>/api/updates</code></td><td>Novedades; <code>?since=ISO&amp;channel=slug&amp;kind=shorts&amp;limit=N</code></td></tr>
+    <tr><td>GET</td><td><code>/api/resolve?q=</code></td><td>Buscar canal en YouTube (nombre, handle, id, URL, suscriptores)</td></tr>
+    <tr><td>POST</td><td><code>/api/channels</code></td><td>Alta de uno o varios canales</td></tr>
+    <tr><td>PATCH</td><td><code>/api/channels/&lt;key&gt;</code></td><td>Editar <code>name</code>, <code>slug</code>, <code>handle</code>, <code>url</code>, <code>cid</code></td></tr>
+    <tr><td>PATCH</td><td><code>/api/channels</code></td><td>Edición en lote <code>[{"key": "...", ...}]</code></td></tr>
+    <tr><td>DELETE</td><td><code>/api/channels/&lt;key&gt;</code></td><td>Borrar un canal (feed + caché de todos los tipos)</td></tr>
+    <tr><td>DELETE</td><td><code>/api/channels?keys=a,b</code></td><td>Borrado en lote</td></tr>
+    <tr><td>POST</td><td><code>/api/check</code></td><td>Refrescar ahora; <code>{"channels": [...], "kinds": [...]}</code> opcional</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="parametros">5. Parámetros</h2>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Parámetro</th><th>Aplica a</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>kind</code></td><td>contenido, updates, check</td><td><code>videos</code> · <code>shorts</code> · <code>streams</code>. En la ruta ya va el tipo; <code>?kind=</code> lo sobrescribe.</td></tr>
+    <tr><td><code>limit</code></td><td>contenido, updates</td><td>Entero 1–100. Por defecto <strong>20</strong> (updates: 50). No inventa datos: el tope real es lo cacheado.</td></tr>
+    <tr><td><code>live</code></td><td>contenido</td><td><code>1</code> fuerza una consulta a YouTube ahora; <code>0</code> usa caché. Un canal no registrado consulta en vivo salvo <code>live=0</code>.</td></tr>
+    <tr><td><code>videos</code></td><td><code>/api/channels</code></td><td><code>1</code> incluye el array completo de videos por canal.</td></tr>
+    <tr><td><code>since</code></td><td><code>/api/updates</code></td><td>ISO 8601, p. ej. <code>2026-11-16T00:00:00Z</code>.</td></tr>
+    <tr><td><code>token</code></td><td>todo</td><td>Alternativas: <code>?token=</code>, <code>X-API-Token</code>, <code>Authorization: Bearer</code>.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<pre><code># token por cabecera (recomendado; evita el token en logs y URLs)
+curl -s -H "X-API-Token: $TOKEN" "http://localhost:8000/api/channels"</code></pre>
+
+<h2 id="ejemplos">6. Ejemplos</h2>
+
+<h3>Añadir un canal a <code>channels.json</code></h3>
+
+<p>Es una lista JSON; cada canal necesita <code>slug</code>, <code>name</code>, <code>handle</code>
+y <code>cid</code>, y opcionalmente <code>kinds</code> y <code>lang</code>. Cuidado con las comas
+entre objetos:</p>
+
+<pre><code>[
+  {"slug": "fireship", "name": "Fireship", "handle": "@Fireship", "cid": "UCsBjURrPoezykLs9EqgamOA"},
+  {
+    "slug": "tvperu",
+    "name": "TVPerú",
+    "handle": "@tvperu",
+    "cid": "UCrAb_x80PtTiN3lCkQOSFPg",
+    "kinds": ["videos", "shorts"],
+    "lang": "es"
+  },
+  {
+    "slug": "tvperunoticias",
+    "name": "TVPerú Noticias",
+    "handle": "@tvperunoticias",
+    "cid": "UCkZCoc42IipR1ucqJmIehsA",
+    "kinds": ["videos", "shorts"],
+    "lang": "es"
+  }
+]</code></pre>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Campo</th><th>Obligatorio</th><th>Significado</th></tr></thead>
+  <tbody>
+    <tr><td><code>slug</code></td><td>sí</td><td>Identificador interno y nombre de archivo (<code>feeds/tvperu.xml</code>). Minúsculas y guiones.</td></tr>
+    <tr><td><code>name</code></td><td>sí</td><td>Nombre visible en el RSS y en la API.</td></tr>
+    <tr><td><code>handle</code></td><td>sí</td><td><code>@handle</code> (o <code>/channel/UC...</code> si el canal no tiene alias).</td></tr>
+    <tr><td><code>cid</code></td><td>sí</td><td>Id <code>UC...</code>; es lo que realmente se consulta.</td></tr>
+    <tr><td><code>kinds</code></td><td>no</td><td>Pestañas que descarga el cron. Por defecto, <code>YT_KINDS</code> (<code>videos</code>).</td></tr>
+    <tr><td><code>lang</code></td><td>no</td><td>Idioma de YouTube (<code>es</code>, <code>en</code>…). Con <code>es</code> los títulos no se traducen al inglés. Por defecto, <code>YT_LANG</code>.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Después de editar el archivo:</p>
+
+<pre><code>python3 generate.py     # crea feeds/tvperu.xml, feeds/tvperu-shorts.xml, etc.</code></pre>
+
+<p>La alternativa por API (escribe el mismo <code>channels.json</code>):</p>
+
+<pre><code>curl -s -X POST -H "X-API-Token: $TOKEN" \
+  -d '{"handle":"@tvperu","kinds":["videos","shorts"],"lang":"es"}' \
+  "http://localhost:8000/api/channels"</code></pre>
+
+<p>Si no conoces el <code>cid</code>, búscalo con <code>/api/resolve?q=</code> o con:</p>
+
+<pre><code>curl -sL "https://www.youtube.com/@tvperu" | grep -o '"externalId":"UC[^"]*"' | head -1</code></pre>
+
+<h3>Últimos 20 shorts de un canal (sin registrarlo antes)</h3>
+<pre><code>curl -s "http://localhost:8000/api/channel/@tvperu/shorts?limit=20"</code></pre>
+
+<h3>Videos normales</h3>
+<pre><code>curl -s "http://localhost:8000/api/channel/@tvperu/videos?limit=20"</code></pre>
+
+<h3>Directos</h3>
+<pre><code>curl -s "http://localhost:8000/api/channel/@tvperu/streams?limit=10"</code></pre>
+
+<h3>Forzar consulta en vivo y limitar a 5</h3>
+<pre><code>curl -s "http://localhost:8000/api/channel/@tvperu/shorts?live=1&amp;limit=5"</code></pre>
+
+<h3>Novedades de las últimas 24 h (solo canales registrados)</h3>
+<pre><code>curl -s -H "X-API-Token: $TOKEN" \
+  "http://localhost:8000/api/updates?since=$(date -u -d '1 day ago' +%Y-%m-%dT%H:%M:%SZ)&amp;kind=shorts"</code></pre>
+
+<h3>Registrar un canal para el cron y los feeds</h3>
+<pre><code>curl -s -X POST -H "X-API-Token: $TOKEN" \
+  -d '{"handle":"@tvperu","kinds":["videos","shorts"]}' \
+  "http://localhost:8000/api/channels"</code></pre>
+
+<h3>Refrescar solo shorts de un canal y ver qué es nuevo</h3>
+<pre><code>curl -s -X POST -H "X-API-Token: $TOKEN" \
+  -d '{"channels":["tvperu"],"kinds":["shorts"]}' \
+  "http://localhost:8000/api/check"</code></pre>
+
+<h3>Buscar un canal</h3>
+<pre><code>curl -s -H "X-API-Token: $TOKEN" \
+  "http://localhost:8000/api/resolve?q=mckay+wrigley"</code></pre>
+
+<h2 id="respuesta">7. Forma de la respuesta</h2>
+
+<p>Ejemplo real de <code>/api/channel/@tvperu/shorts?limit=20</code>:</p>
+
+<pre><code>{
+  "ok": true,
+  "channel": "tvperu",
+  "handle": "@tvperu",
+  "kind": "shorts",
+  "tracked": false,
+  "live": true,
+  "count": 20,
+  "returned": 20,
+  "feed_url": "http://localhost:8000/tvperu-shorts.xml",
+  "videos": [
+    {
+      "channel": "tvperu",
+      "kind": "shorts",
+      "id": "EVHLhRnk5zw",
+      "title": "Major IRTP deployment for Pope Leo XIV's visit",
+      "link": "https://www.youtube.com/shorts/EVHLhRnk5zw",
+      "thumbnail": "https://i.ytimg.com/vi/EVHLhRnk5zw/oar2.jpg",
+      "first_seen": "2026-11-17T02:21:28+00:00",
+      "meta": ["49 views"]
+    }
+  ]
+}</code></pre>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Campo</th><th>Significado</th></tr></thead>
+  <tbody>
+    <tr><td><code>channel</code></td><td>Slug interno (minúsculas, con guiones).</td></tr>
+    <tr><td><code>kind</code></td><td>Tipo del contenido devuelto.</td></tr>
+    <tr><td><code>tracked</code></td><td><code>true</code> si está en <code>channels.json</code>; <code>false</code> si se resolvió al vuelo.</td></tr>
+    <tr><td><code>live</code></td><td><code>true</code> si esta respuesta vino de una consulta a YouTube (no de caché).</td></tr>
+    <tr><td><code>count</code> / <code>returned</code></td><td>Items en caché / items incluidos tras aplicar <code>limit</code>.</td></tr>
+    <tr><td><code>feed_url</code></td><td>RSS del mismo tipo (requiere token si los feeds están protegidos en nginx).</td></tr>
+    <tr><td><code>first_seen</code></td><td>Primera vez que el servidor vio el item. En shorts es <strong>la única fecha</strong> disponible.</td></tr>
+    <tr><td><code>meta</code></td><td>Etiquetas de la página (vistas; en videos/streams también la antigüedad, p. ej. <code>"3d ago"</code>).</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="errores">8. Errores</h2>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Código</th><th>Cuándo</th><th>Qué hacer</th></tr></thead>
+  <tbody>
+    <tr><td><code>200</code></td><td>Correcto. Los lotes pueden devolver <code>207</code>.</td><td>—</td></tr>
+    <tr><td><code>207</code></td><td>Lote con éxitos y fallos.</td><td>Revisar <code>results[].status</code> y <code>error</code>.</td></tr>
+    <tr><td><code>400</code></td><td><code>kind</code> inválido, <code>limit</code> no numérico, JSON roto.</td><td>Corregir el parámetro; el mensaje indica los valores válidos.</td></tr>
+    <tr><td><code>401</code></td><td>Token ausente o incorrecto.</td><td>Enviar <code>X-API-Token</code> o <code>?token=</code>.</td></tr>
+    <tr><td><code>404</code></td><td>Canal o ruta inexistente.</td><td>Probar <code>/api/resolve?q=</code> para encontrar el handle.</td></tr>
+    <tr><td><code>405</code></td><td>Método no permitido en esa ruta.</td><td>Usar el método de la tabla.</td></tr>
+    <tr><td><code>502</code></td><td>YouTube no respondió o cambió el HTML.</td><td>Reintentar; si persiste, revisar el log del servicio.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="entorno">9. Variables de entorno</h2>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Variable</th><th>Por defecto</th><th>Efecto</th></tr></thead>
+  <tbody>
+    <tr><td><code>YT_API_TOKEN</code></td><td>— (obligatoria)</td><td>Secreto compartido de la API.</td></tr>
+    <tr><td><code>YT_API_HOST</code> / <code>YT_API_PORT</code></td><td><code>127.0.0.1</code> / <code>8099</code></td><td>Dónde escucha <code>api.py</code>. Usa <code>0.0.0.0</code> en contenedores; <code>$PORT</code> se usa si no hay <code>YT_API_PORT</code>.</td></tr>
+    <tr><td><code>YT_PUBLIC_READ</code></td><td><code>0</code></td><td><code>1</code> abre <code>GET /api/channel/...</code> sin token. <code>/api/health</code> es siempre público.</td></tr>
+    <tr><td><code>YT_CORS_ORIGINS</code></td><td><code>*</code></td><td>Orígenes permitidos, separados por comas. <code>*</code> = cualquiera; vacío = sin CORS.</td></tr>
+    <tr><td><code>YT_SERVE_FEEDS</code></td><td><code>0</code></td><td><code>1</code> sirve <code>feeds/*.xml</code> en <code>/feeds/</code> desde la API (un solo puerto).</td></tr>
+    <tr><td><code>YT_REFRESH_INTERVAL</code></td><td><code>0</code></td><td>Segundos entre refrescos dentro del proceso API. <code>0</code> lo desactiva; en Docker se usa <code>1800</code>.</td></tr>
+    <tr><td><code>YT_FEEDS_BASE</code></td><td>carpeta del script</td><td>Directorio de datos: <code>channels.json</code>, <code>state.json</code>, <code>cache/</code>, <code>feeds/</code>.</td></tr>
+    <tr><td><code>YT_FEEDS_PUBLIC_BASE</code></td><td><code>http://localhost/yt</code></td><td>Prefijo público escrito en self-links de RSS y en <code>feed_url</code>.</td></tr>
+    <tr><td><code>YT_KINDS</code></td><td><code>videos</code></td><td>Tipos que descarga el cron para canales sin <code>kinds</code>: <code>videos,shorts</code>.</td></tr>
+    <tr><td><code>YT_LANG</code></td><td><code>en</code></td><td>Idioma de YouTube para canales sin <code>lang</code>. Con <code>es</code> los títulos no se traducen.</td></tr>
+    <tr><td><code>YT_MAX_ITEMS</code></td><td><code>20</code></td><td>Items guardados por canal y tipo.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="notas">10. Notas y límites</h2>
+
+<ul>
+  <li><strong>Fechas:</strong> YouTube no publica la fecha exacta en esas páginas. <code>first_seen</code> es cuando el servidor lo detectó; en videos/streams se siembra con la etiqueta relativa (<code>"3d ago"</code>), pero <strong>los shorts no traen antigüedad</strong>, así que su fecha es siempre el primer avistamiento.</li>
+  <li><strong>Sin paginación:</strong> una carga de la pestaña trae ~48 shorts o ~30 videos. El tope efectivo por defecto es 20 (<code>YT_MAX_ITEMS</code>); pedir más de lo cacheado no devuelve más items.</li>
+  <li><strong>Pestañas separadas:</strong> <code>videos</code> no incluye shorts. El feed agregado <code>all.xml</code> suma solo la pestaña de videos.</li>
+  <li><strong>Shorts:</strong> miniatura vertical <code>oar2.jpg</code>; los videos usan <code>hqdefault.jpg</code>.</li>
+  <li><strong>Canales no registrados:</strong> <code>/api/channel/&lt;key&gt;/&lt;kind&gt;</code> los resuelve en memoria (1 h) y consulta en vivo. No aparecen en <code>/api/channels</code>, <code>/api/updates</code> ni en el cron hasta darlos de alta con <code>POST /api/channels</code>.</li>
+  <li><strong>Lotes:</strong> las escrituras devuelven <code>207</code> si algún item falla; revisa <code>results[].status</code> (<code>created</code>, <code>exists</code>, <code>updated</code>, <code>deleted</code>, <code>missing</code>, <code>error</code>).</li>
+  <li><strong>nginx:</strong> el snippet de <code>deploy/</code> sigue usando <code>/yt/api/</code> y sirve los RSS estáticos en <code>/yt/</code> con token en la query. Este manual no cambia esa configuración.</li>
+</ul>
+
+<h3>Tests</h3>
+<pre><code>python3 -m unittest discover -s tests -v</code></pre>
+
+<h2 id="despliegue">11. CORS y despliegue</h2>
+
+<h3>CORS</h3>
+
+<p>La API responde con cabeceras CORS tanto en JSON como en XML. Por defecto
+<code>YT_CORS_ORIGINS=*</code> permite cualquier origen. Para restringirlo:</p>
+
+<pre><code># .env
+YT_CORS_ORIGINS=https://app.example.com,https://admin.example.com
+# vacío = sin CORS
+#YT_CORS_ORIGINS=</code></pre>
+
+<p>El preflight <code>OPTIONS</code> responde <code>204</code> sin token y permite
+<code>GET, HEAD, POST, PATCH, DELETE, OPTIONS</code> con las cabeceras
+<code>Content-Type</code>, <code>X-API-Token</code> y <code>Authorization</code>.
+<code>HEAD</code> funciona en todas las rutas <code>GET</code>. Además,
+<code>GET /api/health</code> es siempre público (sin token) para los health checks de Docker y
+Render, y el token de la query se redacta en los logs.</p>
+
+<h3>Docker Compose (puerto 9012)</h3>
+
+<pre><code>cp .env.example .env       # define YT_API_TOKEN
+docker compose up -d --build
+
+curl http://SERVER:9012/api/health
+curl "http://SERVER:9012/api/channel/@tvperu/shorts"
+curl -o tvperu.xml http://SERVER:9012/feeds/tvperu.xml</code></pre>
+
+<p>Un solo contenedor sirve JSON y XML: escucha en <code>:8000</code> dentro y se publica en
+<strong>9012</strong>. Los datos viven en el volumen <code>yt-data</code> (<code>/data</code>) y
+<code>YT_REFRESH_INTERVAL=1800</code> refresca cada 30 minutos, sin cron. Para que los self-links
+del RSS y <code>feed_url</code> apunten a tu dominio:</p>
+
+<pre><code>YT_PUBLIC_BASE=https://feeds.example.com docker compose up -d</code></pre>
+
+<p><code>channels.json</code> se copia a <code>/data</code> en el primer arranque. Los cambios
+hechos por la API persisten en el volumen: <code>docker compose down</code> lo conserva y
+<code>docker compose down -v</code> lo borra. Para editarlo a mano:</p>
+
+<pre><code>docker compose exec yt-feeds vi /data/channels.json</code></pre>
+
+<h3>Render</h3>
+
+<p><code>render.yaml</code> es un Blueprint: <em>New → Blueprint</em> y elige el repositorio.
+Usa el mismo <code>Dockerfile</code>, genera <code>YT_API_TOKEN</code> y publica los feeds en
+<code>https://&lt;servicio&gt;.onrender.com/feeds/&lt;slug&gt;.xml</code>.
+<code>api.py</code> toma el puerto de <code>PORT</code> y escucha en <code>0.0.0.0</code>.</p>
+
+<div class="note">
+  <strong>Plan gratuito de Render:</strong> el disco es efímero, así que los feeds se regeneran
+  en cada deploy. En un plan de pago, descomenta el bloque <code>disk</code> de
+  <code>render.yaml</code> (montado en <code>/data</code>) para conservar
+  <code>channels.json</code>, <code>state.json</code>, cachés y feeds.
+</div>
+
+<div class="note">
+  <strong>Un puerto, dos prefijos:</strong> con <code>YT_SERVE_FEEDS=1</code> los XML se sirven
+  en <code>/feeds/</code> desde la propia API, así que no hace falta <code>http.server</code> ni
+  nginx para publicarlos. En ese caso los feeds son públicos (los lectores RSS no envían
+  cabeceras); usa un proxy inverso si deben quedar restringidos.
+</div>
+
+<footer>
+  youtube-rss-api · manual generado para el despliegue local (puerto 8000).
+  Rutas canónicas bajo <code>/api</code>; <code>/yt/api</code> queda para nginx y
+  <code>/channel</code> como alias antiguo.
+</footer>
+
+</div>
+</body>
+</html>

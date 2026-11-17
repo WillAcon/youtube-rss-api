@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+
+# Runtime data: channels.json is config and stays tracked, the rest is generated
+state.json
+cache/
+feeds/
+*.log
+
+# Secrets: copy .env.example to .env and keep it local
+.env
+.env.*
+!.env.example
+
+.DS_Store

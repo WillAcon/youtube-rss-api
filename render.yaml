@@ -1,0 +1,38 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Deploy with "New > Blueprint" pointing at this repository.
+#
+# The container serves JSON and XML on one port; Render injects PORT, api.py
+# honours it automatically (YT_API_HOST=0.0.0.0 is set here).
+services:
+  - type: web
+    name: yt-feeds-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # Generated once by Render and kept stable across deploys.
+      - key: YT_API_TOKEN
+        generateValue: true
+      - key: YT_API_HOST
+        value: 0.0.0.0
+      - key: YT_FEEDS_BASE
+        value: /data
+      - key: YT_SERVE_FEEDS
+        value: "1"
+      - key: YT_REFRESH_INTERVAL
+        value: "1800"
+      - key: YT_PUBLIC_READ
+        value: "1"
+      - key: YT_CORS_ORIGINS
+        value: "*"
+      # YT_FEEDS_PUBLIC_BASE is derived from RENDER_EXTERNAL_URL automatically.
+    # The free plan has an ephemeral filesystem: feeds regenerate on each deploy.
+    # On a paid instance uncomment this to persist channels.json, state.json,
+    # feeds/ and cache/:
+    # disk:
+    #   name: yt-data
+    #   mountPath: /data
+    #   sizeGB: 1
