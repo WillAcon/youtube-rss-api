@@ -594,7 +594,10 @@ class Handler(BaseHTTPRequestHandler):
         if self._serve_feed(path, method):
             return
 
-        if path.startswith("/yt/api"):
+        # Bare health endpoints, as expected by proxies and platform probes.
+        if path.rstrip("/") in ("/health", "/healthz"):
+            rest = "/health"
+        elif path.startswith("/yt/api"):
             rest = path[len("/yt/api"):]
         elif path.startswith("/api/channel/"):
             # /api/channel/@handle/shorts -> /channels/@handle/shorts
@@ -610,7 +613,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(404, {"ok": False, "error": "not found"})
         parts = [unquote(part) for part in rest.strip("/").split("/") if part]
 
-        public_health = path.rstrip("/") in ("/api/health", "/yt/api/health")
+        public_health = path.rstrip("/") in (
+            "/health",
+            "/healthz",
+            "/api/health",
+            "/yt/api/health",
+        )
         open_read = public_health or (
             env_flag("YT_PUBLIC_READ")
             and method == "GET"

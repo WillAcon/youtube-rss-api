@@ -139,7 +139,8 @@ serves the same routes under `/api` as well, which is the recommended prefix for
 Authentication: `?token=<token>`, `X-API-Token: <token>`, or `Authorization: Bearer <token>`.
 Missing or wrong token returns `401`. With `YT_PUBLIC_READ=1`, `GET /api/channel/...` is served
 without a token (handy for a public frontend); every other route still requires it.
-`GET /api/health` is always public (no token) so container and platform health checks work.
+`GET /health`, `GET /healthz`, `GET /api/health` and `GET /yt/api/health` are always public
+(no token), so container and platform health checks work with any of them.
 
 CORS is enabled by default for every origin (`YT_CORS_ORIGINS=*`), on both JSON and XML
 responses. Set `YT_CORS_ORIGINS=https://app.example.com,https://admin.example.com` to restrict
@@ -243,7 +244,8 @@ Three options, all reading `YT_API_TOKEN` from the environment (never hardcoded)
 `Dockerfile` + `docker-compose.yml` run the JSON API **and** the XML feeds in one container.
 The container listens on `:8000` internally; Compose publishes it on **9012**. Data is kept in
 the `yt-data` volume (`/data`), and `YT_REFRESH_INTERVAL=1800` re-harvests every 30 minutes, so
-no cron is needed.
+no cron is needed. Set `YT_REFRESH_INTERVAL=600` in `.env` and run `docker compose up -d` to
+refresh every 10 minutes.
 
 ```bash
 cp .env.example .env       # set YT_API_TOKEN=...

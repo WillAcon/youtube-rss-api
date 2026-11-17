@@ -26,7 +26,8 @@ services:
       YT_API_PORT: "8000"
       YT_FEEDS_BASE: /data
       YT_SERVE_FEEDS: "1"
-      YT_REFRESH_INTERVAL: "1800"
+      # Default 30 min; override with YT_REFRESH_INTERVAL=600 in .env for 10 min.
+      YT_REFRESH_INTERVAL: "${YT_REFRESH_INTERVAL:-1800}"
       YT_FEEDS_PUBLIC_BASE: ${YT_PUBLIC_BASE:-http://localhost:9012/feeds}
     volumes:
       - yt-data:/data

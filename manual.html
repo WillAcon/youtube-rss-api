@@ -501,7 +501,8 @@ YT_CORS_ORIGINS=https://app.example.com,https://admin.example.com
 <code>GET, HEAD, POST, PATCH, DELETE, OPTIONS</code> con las cabeceras
 <code>Content-Type</code>, <code>X-API-Token</code> y <code>Authorization</code>.
 <code>HEAD</code> funciona en todas las rutas <code>GET</code>. Además,
-<code>GET /api/health</code> es siempre público (sin token) para los health checks de Docker y
+<code>/health</code>, <code>/healthz</code>, <code>/api/health</code> y
+<code>/yt/api/health</code> son siempre públicos (sin token) para los health checks de Docker y
 Render, y el token de la query se redacta en los logs.</p>
 
 <h3>Docker Compose (puerto 9012)</h3>
@@ -515,8 +516,10 @@ curl -o tvperu.xml http://SERVER:9012/feeds/tvperu.xml</code></pre>
 
 <p>Un solo contenedor sirve JSON y XML: escucha en <code>:8000</code> dentro y se publica en
 <strong>9012</strong>. Los datos viven en el volumen <code>yt-data</code> (<code>/data</code>) y
-<code>YT_REFRESH_INTERVAL=1800</code> refresca cada 30 minutos, sin cron. Para que los self-links
-del RSS y <code>feed_url</code> apunten a tu dominio:</p>
+<code>YT_REFRESH_INTERVAL=1800</code> refresca cada 30 minutos, sin cron. Para cada 10 minutos,
+pon <code>YT_REFRESH_INTERVAL=600</code> en <code>.env</code> y ejecuta
+<code>docker compose up -d</code>. Para que los self-links del RSS y <code>feed_url</code>
+apunten a tu dominio:</p>
 
 <pre><code>YT_PUBLIC_BASE=https://feeds.example.com docker compose up -d</code></pre>
 
